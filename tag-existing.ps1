@@ -3,13 +3,17 @@ function Tag-AzExistingResources {
     [cmdletbinding()]
     param(
         # the sub id to check against
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory,ParameterSetName="id")]
+        [string]
+        $Subscriptionid,
+        # the sub name to look up
+        [Parameter(Mandatory,ParameterSetName="name")]
         [string]
         $Subscription,
         # The Created Date for resources older than 11.17.2022
         [Parameter()]
         [string]
-        $OldDate = "prior to 11.17.2022",
+        $OldDate = "prior to $(get-date)",
         # The user - Secura - for resources older than 11.17.2022
         [Parameter()]
         [string]
@@ -20,12 +24,15 @@ function Tag-AzExistingResources {
         $Tag
     )
 
-    if($Subscription.contains(" "))
+    if([string]::IsNullOrEmpty($subscriptionid))
     {
-        Get-AzSubscription | Where-Object {$_.name -match $Subscription} | Select-AzSubscription 
+        Get-AzSubscription | Where-Object {$_.Name -match $Subscription} | Select-AzSubscription 
+        write-verbose "You provided $subscription"       
     }
     else {
-        get-azsubscription | Where-Object {$_.subscriptionid -match $subscription} | Select-AzSubscription
+ 
+        get-azsubscription | Where-Object {$_.subscriptionid -match $subscriptionid} | Select-AzSubscription
+        write-verbose "You provided $subscriptionID"
     }
 
     $allresources = (get-azresource)

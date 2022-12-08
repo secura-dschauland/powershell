@@ -10,7 +10,7 @@ function unlock-ismail {
     {   
         if(get-childitem -Path c:\users\de03930 | where{$_.Name -eq "cred.xml"})
         {
-            (get-aduser -filter * -properties lockedout | where{$_.name -match "ismail al bulushi - admin"})| Unlock-ADAccount -Credential (Import-Clixml C:\users\de03930\cred.xml)
+            (get-aduser -filter * -properties lockedout | where{$_.name -match "ismail al bulushi - admin"})| Unlock-ADAccount -Credential $env:cred #(Import-Clixml C:\users\de03930\cred.xml)
 
             "Ismail has been unlocked as of $(get-date) here is proof: $(get-aduser -filter * -properties lockedout | where{$_.name -match "ismail al bulushi - admin"} | select samaccountname, givenname, surname, lockedout)"
         }
