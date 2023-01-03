@@ -14,6 +14,13 @@ function Get-LocalAdmins {
     )
     #Test with Get-LocalAdmins -ComputerName az-dci-d01.intranet.secura.net
     begin {
+        if((test-path C:\users\de03930\cred.xml) -eq "true")
+        {
+            continue 
+        }
+        else {
+            write-host "You do not have a cred file to use - please make one."
+        }
         if((get-wmiobject -class win32_computersystem).partofdomain -eq "True")
         {
             write-host "$"
