@@ -3,7 +3,10 @@ function unlock-ismail {
     param(
         [Parameter()]
         [switch]
-        $unlock
+        $unlock,
+        [parameter()]
+        [switch]
+        $adac
     )
 
     if((get-aduser -filter * -properties lockedout | where{$_.name -match "ismail al bulushi - admin"} | select givenname, surname, lockedout).lockedout -eq "True" -and $unlock)
@@ -27,6 +30,11 @@ function unlock-ismail {
     else {
         "Current Status: Unlocked! as of $(get-date)"
         get-aduser -filter * -properties lockedout | where{$_.name -match "ismail al bulushi - admin"} | select samaccountname, givenname, surname, lockedout
+    }
+
+    if($adac)
+    {
+        runas  /user:(Import-Clixml C:\users\de03930\cred.xml).username "%windir%\system32\dsac.exe"
     }
         
 }
