@@ -487,3 +487,6 @@ get-WADDiag.ps1
 Microsoft.PowerShell_profile.ps1
 x.txt
 securityRecord.txt
+Modules/Royal*
+Modules/Microsoft*
+Modules/Azure*
