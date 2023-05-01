@@ -56,7 +56,7 @@ function Assign-MgAdoLicense {
 
         $mggroups = get-mggroup -all 
         $StakeholderGroup = $mggroups | where { $_.Displayname -match "DevOps-StakeHolder" }
-        $BasicGroup = $mggroups | where { $_.Displayname -match "DevOps-Basic" }
+        $BasicGroup = $mggroups | where { $_.Displayname -match "DevOps-Basic" -and $_.DisplayName -ne "G-ACS-Azure-Devops-Basic+TestPlans" }
         $VisualStudioGroup = $mggroups | where { $_.Displayname -match "DevOps-VisualStudio" }
         $Basic_TestGroup = $mggroups | where { $_.Displayname -match "TestPlans" }           
         
