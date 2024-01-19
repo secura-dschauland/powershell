@@ -34,6 +34,9 @@ function New-AzAppRegistration {
         [Parameter()]
         [switch]
         $useAdmin,
+        [Parameter()]
+        [int]
+        $Sleep,
         [Parameter(ValueFromPipeline)]
         [switch]
         $Whatif
@@ -67,7 +70,12 @@ function New-AzAppRegistration {
             New-MgApplicationOwnerByRef -applicationid $($appreg.id) -OdataId $odataID
             Write-Output "App Registration for $AzureAppName created - $azureappowner set as owner!"    
             write-verbose "will sleep 30 seconds to allow app registration to be created before adding app roles"
-            start-sleep 30
+            if(!$sleep) {
+                $sleep = 30
+            }
+            else{
+                $sleep = $sleep}
+            start-sleep $sleep
             write-verbose "Check if $azureappname is an api app registration and continue if it is..."
 
             if ($azureappname -match "api") {
