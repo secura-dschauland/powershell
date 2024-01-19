@@ -40,15 +40,15 @@ function New-AzAppRegistration {
 
     )
     if ($useAdmin) {
-        $ownerobj = (get-mguser -all | where { $_.displayname -match $AzureAppOwner -and $_.displayname -match "Admin" }).id
-        $odataID = "https://graph.microsoft.com/v1.0/directoryObjects/{$ownerobj}"
+        $ownerobj = (get-mguser -all | where { $_.displayname -match $AzureAppOwner -and $_.displayname -match "Admin" })
+        $odataID = "https://graph.microsoft.com/v1.0/directoryObjects/{$($ownerobj.id)}"
     }
     else {
-        $ownerobj = (get-mguser -all | where { $_.displayname -match $AzureAppOwner -and $_.displayname -notmatch "Admin" }).id
-        $odataID = "https://graph.microsoft.com/v1.0/directoryObjects/{$ownerobj}"
+        $ownerobj = (get-mguser -all | where { $_.displayname -match $AzureAppOwner -and $_.displayname -notmatch "Admin" })
+        $odataID = "https://graph.microsoft.com/v1.0/directoryObjects/{$($ownerobj.id)}"
     }
     write-verbose "Get App Registrations...."
-    $apps = Get-MgApplication 
+    $apps = Get-MgApplication -search "DisplayName:$AzureAppName" -consistencylevel eventual #get-azureadapplication -searchstring $AzureAppName
     
     write-verbose "Check if $azureappname registration exists..."
     if (($apps | where { $_.displayname -match $azureappname }).count -eq 0) {
@@ -66,6 +66,48 @@ function New-AzAppRegistration {
             $sp = New-MgServicePrincipal -DisplayName $azureappname -appid $appreg.appid # add a service principal fer yer new reg
             New-MgApplicationOwnerByRef -applicationid $($appreg.id) -OdataId $odataID
             Write-Output "App Registration for $AzureAppName created - $azureappowner set as owner!"    
+
+            if ($azureappname -match "api") {
+                write-output "$Azureappname will need API Permissions for the API apps... "
+                write-output "Use the New-AzAppPermissions Powershell function to assign permissions."
+                function CreateAppRole([string] $rolename, [string] $roledesc) {
+                    $appRole = @{
+                        AllowedMemberTypes = @("Application")
+                        DisplayName = $rolename
+                        Id = New-Guid
+                        IsEnabled = $true
+                        Description = $roledesc
+                        Value = $rolename
+                    }
+                
+                    return $appRole
+                }
+#                $api_appreg_obj =  #get-azureadapplication -searchstring $AzureAppName
+                $app_roller = (get-mgapplication -search "Displayname:$AzureAppName" -consistencylevel eventual)
+                write-verbose "App Roller has value $app_roller"
+                $approles = $app_roller.AppRoles
+                write-output "App roles for this application registration ($azureappname) before:"
+        
+                if ($approles.count -eq 0) {
+                    write-verbose "$azureappname has No App Roles Right Now"
+                    write-verbose " \n"
+                }
+                else {
+                    write-output $approles
+                }
+                
+                $newrole = CreateAppRole -rolename access -roledesc "Full access to the application"
+                write-verbose "======= whats in newrole ====="
+                write-verbose ($newrole | Format-List | out-string)
+                write-verbose "=============================="
+        
+                $newAppRoles = $app_roller.approles + $newrole
+                update-mgapplication -applicationid $app_roller.id -approles $newapproles
+                write-output "App Roles Added to $azureappname!"
+            }
+            else {
+                write-output "$Azureappname is not an api appreg - it does not need an access permission added for assignment to other app registrations"
+            }
         }
     }
     else {
@@ -82,14 +124,15 @@ function New-AzAppRegistration {
                     }                
                 }
                 else {
-                    write-verbose "$item.displayname has no owner. Adding... "
-
+                    write-verbose "$item.displayname has no owner. Adding $($ownerobj.displayname)... "
+                    New-MgApplicationOwnerByRef -ApplicationId $item.id -OdataId $odataID
                 }    
             }
         }
         else {
             if (!(Get-MgApplicationOwner -ApplicationId $appobj.id)) {
-                write-verbose "$appobj.displayname has no owner.  Adding..."
+                write-verbose "$($appobj.displayname | out-string) has no owner.  Adding $($ownerobj.displayname)"
+                New-MgApplicationOwnerByRef -ApplicationId $appobj.id -OdataId $odataID
             }
             else {
                 $currentOwner = Get-MgApplicationOwner -ApplicationId $appobj.id
@@ -134,50 +177,6 @@ function New-AzAppRegistration {
                 }
                 write-output "$azureAppName has a service principal (enterprise app registration) - no work to do here."
             }         
-        }
-    
-        if ($azureappname -match "api") {
-            write-output "$Azureappname will need API Permissions for the API apps... "
-            write-output "Use the New-AzAppPermissions Powershell function to assign permissions."
-            function CreateAppRole([string] $rolename, [string] $roledesc) {
-                $appRole = New-Object Microsoft.Open.MSGraph.Model.AppRole
-                $approle.AllowedMemberTypes = New-Object System.Collections.Generic.List[string]
-    
-                $approle.AllowedMemberTypes.add("Application")
-                $approle.DisplayName = $rolename
-                $approle.id = New-Guid
-                $approle.IsEnabled = $true
-                $approle.description = $roledesc
-                $approle.Value = $rolename
-            
-                return $approle
-            }
-    
-            $api_appreg_obj = get-mgapplication -search '"Displayname:$AzureAppName"' -consistencylevel eventual #get-azureadapplication -searchstring $AzureAppName
-            $app_roller = get-mgapplication -objectid $api_appreg_obj.objectid
-            write-verbose "App Roller has value $app_roller"
-            $approles = $app_roller.AppRoles
-            write-output "App roles for this application registration ($azureappname) before:"
-    
-            if ($approles.count -eq 0) {
-                write-verbose "$azureappname has No App Roles Right Now"
-                write-verbose " \n"
-            }
-            else {
-                write-output $approles
-            }
-            
-            $newrole = CreateAppRole -rolename access -roledesc "Full access to the application"
-            write-verbose "======= whats in newrole ====="
-            write-verbose $newrole
-            write-verbose "=============================="
-    
-            $approles.add($newrole)
-            update-mgapplication -applicationid $($app_roller.id) -approles $approles
-            write-output "App Roles Added to $azureappname!"
-        }
-        else {
-            write-output "$Azureappname is not an api appreg - it does not need an access permission added for assignment to other app registrations"
         }
 
     }
