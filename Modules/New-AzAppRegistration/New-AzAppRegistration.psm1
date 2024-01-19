@@ -70,7 +70,7 @@ function New-AzAppRegistration {
             New-MgApplicationOwnerByRef -applicationid $($appreg.id) -OdataId $odataID
             Write-Output "App Registration for $AzureAppName created - $azureappowner set as owner!"    
             if(!$sleep) {
-                $sleep = 30
+                $sleep = 0
             }
             else{
                 $sleep = $sleep}
