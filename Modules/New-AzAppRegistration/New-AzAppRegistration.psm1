@@ -66,6 +66,9 @@ function New-AzAppRegistration {
             $sp = New-MgServicePrincipal -DisplayName $azureappname -appid $appreg.appid # add a service principal fer yer new reg
             New-MgApplicationOwnerByRef -applicationid $($appreg.id) -OdataId $odataID
             Write-Output "App Registration for $AzureAppName created - $azureappowner set as owner!"    
+            write-verbose "will sleep 30 seconds to allow app registration to be created before adding app roles"
+            start-sleep 30
+            write-verbose "Check if $azureappname is an api app registration and continue if it is..."
 
             if ($azureappname -match "api") {
                 write-output "$Azureappname will need API Permissions for the API apps... "
@@ -83,7 +86,7 @@ function New-AzAppRegistration {
                     return $appRole
                 }
 #                $api_appreg_obj =  #get-azureadapplication -searchstring $AzureAppName
-                $app_roller = (get-mgapplication -search "Displayname:$AzureAppName" -consistencylevel eventual)
+                $app_roller = (get-mgapplication -all | Where-Object {$_.appid -eq $appreg.appid})
                 write-verbose "App Roller has value $app_roller"
                 $approles = $app_roller.AppRoles
                 write-output "App roles for this application registration ($azureappname) before:"
@@ -102,6 +105,8 @@ function New-AzAppRegistration {
                 write-verbose "=============================="
         
                 $newAppRoles = $app_roller.approles + $newrole
+                write-verbose "AppID for AppReg created by this function run: $($app_roller.appid)"
+                write-verbose "ID for App_Roller $($app_roller.id) "
                 update-mgapplication -applicationid $app_roller.id -approles $newapproles
                 write-output "App Roles Added to $azureappname!"
             }
