@@ -21,7 +21,7 @@ function Copy-AzRoleAssignments {
     begin {
     get-azsubscription | where {$_.name -match $SourceSubscriptionName} | select-object -first 1 | select-azsubscription | out-null
     $SourceResource = get-azresource -resourcegroupname $SourceResourceGroupName -resourcename $SourceResourceName
-    $SourceAssignedRoles = get-azroleassignment -scope $SourceAPIM.resourceid | where {$_.scope -match $SourceResource.ResourceType}
+    $SourceAssignedRoles = get-azroleassignment -scope $SourceResourceName.resourceid | where {$_.scope -match $SourceResource.ResourceType}
 
     get-azsubscription | where {$_.name -match $DestinationSubscriptionName} | select-object -first 1 | select-azsubscription | out-null
     $DestinationResource = get-azresource -resourcegroupname $DestinationResourceGroupName -resourcename $DestinationResourceName
